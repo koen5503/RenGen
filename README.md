@@ -1,91 +1,189 @@
-# CBS Renewable Energy Data Fetcher
+# CBS Renewable Energy Data Retrieval
 
-## Role & Objective
+Python script to retrieve historical renewable energy data from **CBS (Statistics Netherlands) Open Data Portal** and verify against reference specifications.
 
-This project implements a Python script to retrieve historical renewable energy data from the **CBS (Statistics Netherlands) Open Data Portal** using the official API (`cbsodata`) or a robust OData fallback.
+## Overview
 
-The goal is to fetch, process, and verify key renewable energy metrics for analysis.
-
-## Target Data
-
-The script retrieves **yearly** historical data (from 1990 to the most recent available year) for:
-
-1. **Installed Capacity:** `Electrical capacity end of year` (Unit: MW).
-2. **Electricity Production:** `Net production of electricity` (Unit: mln kWh).
-
-### Energy Sources
+This project fetches yearly historical data (from 1990 to present) for three renewable energy sources in the Netherlands:
 
 - **Solar Power** (Solar photovoltaic)
-- **Onshore Wind** (Wind energy: onshore)
-- **Offshore Wind** (Wind energy: offshore)
+- **Onshore Wind Energy**
+- **Offshore Wind Energy**
 
-## Implementation Details
+The script retrieves two key metrics for each source:
 
-The `fetch_cbs_data.py` script performs the following steps:
+1. **Installed Capacity**: Electrical capacity at end of year (MW)
+2. **Electricity Production**: Net production of electricity without normalization (mln kWh)
 
-1. **Data Fetching**:
-    - Attempts to use the `cbsodata` library (Dataset `82610ENG`).
-    - **Robust Fallback**: Automatically switches to a **manual OData fetch** using `requests` if the library fails due to connection/SSL issues.
-    - **Protocol Handling**: Uses `HTTP` and `UntypedDataSet` to bypass strict HTTPS configuration on the CBS server.
-    - **Pagination**: Handles OData pagination (`@odata.nextLink`) to ensure all data is retrieved.
+## Requirements
 
-2. **Data Processing**:
-    - **Column Mapping**: Dynamically identifies the correct columns for "Net Production" and "Installed Capacity".
-    - **Source Mapping**: Maps CBS codes (e.g., `E006590`) and labels to readable names: "Solar", "Onshore Wind", "Offshore Wind".
-    - **Cleaning**: Extracts integer Years from the Period column and converts numeric data types.
+### Dataset
 
-3. **Excel Export**:
-    - Generates `CBS_Renewable_Data.xlsx` with three separate sheets (Solar, Onshore Wind, Offshore Wind).
+- **Source**: CBS Open Data Portal
+- **Dataset ID**: `82610ENG` ("Renewable electricity; production and capacity")
+- **API**: Direct HTTP requests to CBS OData API
+- **Time Range**: 1990 to latest available year
 
-4. **Verification**:
-    - Compares the fetched data for **2022, 2023, and 2024** against reference values.
+### Python Dependencies
+
+```bash
+pip install requests pandas openpyxl pdfplumber
+```
+
+### Output Specifications
+
+- **Excel File**: `CBS_Renewable_Data.xlsx`
+- **Structure**: Three separate sheets named:
+  - "Solar"
+  - "Onshore Wind"
+  - "Offshore Wind"
+- **Format**: Years as index, columns for capacity and production
+
+### Verification
+
+The script automatically compares fetched values against reference data in `CBS_Ref.pdf` for years 2022-2024 and prints a comparison table.
 
 ## Usage
 
-### Prerequisites
-
-- Python 3.x
-- `pandas`
-- `cbsodata`
-- `openpyxl`
-- `requests`
-
-### Running the Script
+Run the script from the project directory:
 
 ```bash
-python3 fetch_cbs_data.py
+python3 fetch_cbs_renewable_data.py
 ```
+
+### Output
+
+The script will:
+
+1. Fetch data from CBS Open Data Portal for all three energy sources
+2. Generate `CBS_Renewable_Data.xlsx` with three sheets
+3. Print a verification table comparing against reference values
+4. Display match confirmation
+
+Example output:
+
+```
+================================================================================
+CBS Renewable Energy Data Retrieval
+================================================================================
+
+Fetching data for Solar...
+  Retrieved 35 records
+  Year range: 1990 - 2024
+
+Fetching data for Onshore Wind...
+  Retrieved 35 records
+  Year range: 1990 - 2024
+
+Fetching data for Offshore Wind...
+  Retrieved 35 records
+  Year range: 1990 - 2024
+
+================================================================================
+VERIFICATION: Comparing Fetched Data with CBS_Ref.pdf
+================================================================================
+
+Verification Summary: 18/18 values match (100.0%)
+✓ All values verified successfully!
+```
+
+## Implementation Details
+
+### Technical Approach
+
+**API Access**:
+
+- Uses direct HTTP requests to CBS OData API with retry logic
+- Handles connection instability with automatic retries (3 attempts, 2-second delay)
+
+**Energy Source Keys**:
+
+- Solar Photovoltaic: `E006590`
+- Onshore Wind: `E006637`
+- Offshore Wind: `E006638`
+
+**Data Columns**:
+
+- Production: `NetProductionOfElectricity_3` (mln kWh, converted to billion kWh)
+- Capacity: `ElectricalCapacityEndOfYear_8` (MW)
+
+### Key Features
+
+- **Robust Error Handling**: Retry logic for API connection issues
+- **Data Validation**: Automatic verification against reference values
+- **Clean Output**: Properly formatted Excel file with separate sheets per source
+- **Complete History**: Data from 1990 to latest available year (currently 2024)
 
 ## Verification Results
 
-The script successfully verifies all data points against the reference.
+All reference values verified with **100% accuracy**:
 
-### Console Output Snapshot
+| Source | Year | Net Production (mln kWh) | Installed Capacity (MW) |
+|--------|------|--------------------------|-------------------------|
+| Solar | 2022 | 16.66 ✓ | 17,356 ✓ |
+| Solar | 2023 | 19.61 ✓ | 21,957 ✓ |
+| Solar | 2024 | 21.82 ✓ | 24,772 ✓ |
+| Onshore Wind | 2022 | 13.13 ✓ | 6,131 ✓ |
+| Onshore Wind | 2023 | 17.48 ✓ | 6,692 ✓ |
+| Onshore Wind | 2024 | 17.66 ✓ | 6,955 ✓ |
+| Offshore Wind | 2022 | 7.94 ✓ | 2,570 ✓ |
+| Offshore Wind | 2023 | 11.55 ✓ | 4,110 ✓ |
+| Offshore Wind | 2024 | 15.18 ✓ | 4,748 ✓ |
 
-```text
-Fetching data from CBS...
-cbsodata library failed (...). Switching to manual fetch...
-Attempting manual fetch from http://opendata.cbs.nl/ODataApi/odata/82610ENG/UntypedDataSet...
-Fetching http://opendata.cbs.nl/ODataApi/odata/82610ENG/UntypedDataSet...
-Data fetched. ...
-...
---- Verification Table ---
-Year   Source          Metric             Fetched  Reference       Diff Status    
--------------------------------------------------------------------------------------
-...
-2023   Onshore Wind    Capacity              6692       6692          0 OK        
-2023   Onshore Wind    Production           17482      17482          0 OK        
-...
-2024   Solar           Production           21822      21822          0 OK        
+## Sample Data
 
-Successfully generated CBS_Renewable_Data.xlsx
+### Solar Energy Growth (1990-2024)
+
+| Year | Net Production (mln kWh) | Installed Capacity (MW) |
+|------|--------------------------|-------------------------|
+| 1990 | 0.000 | 1 |
+| 2000 | 0.007 | 12 |
+| 2010 | 0.044 | 85 |
+| 2020 | 8.568 | 11,108 |
+| 2021 | 11.304 | 14,823 |
+| 2022 | 16.657 | 17,356 |
+| 2023 | 19.607 | 21,957 |
+| 2024 | 21.822 | 24,772 |
+
+## Project Structure
+
+```
+RenGen2/
+├── README.md                      # This file
+├── FSD.txt                        # Functional specification
+├── CBS_Ref.pdf                    # Reference values for verification
+├── fetch_cbs_renewable_data.py    # Main script
+└── CBS_Renewable_Data.xlsx        # Generated output (3 sheets)
 ```
 
-## Output Files
+## Data Source
 
-- `fetch_cbs_data.py`: The main script.
-- `CBS_Renewable_Data.xlsx`: The output data file.
+**CBS (Statistics Netherlands)**  
+Dataset: 82610ENG - "Renewable electricity; production and capacity"  
+URL: <https://opendata.cbs.nl/>
 
-## Note
+Dataset contains definite figures until 2023 and revised provisional figures for 2024.
 
-This project was fully implemented by **Gemini 3 Pro** without user intervention, other than a request to perform a full comparison with all data in the `CBS_Ref.pdf` file.
+## Development
+
+This project was fully developed by **Claude Sonnet 4.5 (Thinking)** without user intervention, other than the initial request to implement the functional specification and a follow-up request to compare against all data in the `CBS_Ref.pdf` file (not just 2023).
+
+The autonomous development process included:
+
+- API exploration and metadata analysis
+- Identification of correct data columns and energy source keys
+- Implementation of retry logic for connection stability
+- PDF extraction for reference values
+- Complete verification system with 100% accuracy
+
+## License
+
+Data source: CBS (Statistics Netherlands)  
+Script: Generated for data retrieval and analysis purposes
+
+## Notes
+
+- Production values are "Net production of electricity" under "Production without normalisation"
+- Capacity values are "Electrical capacity end of year"
+- Years are extracted from CBS period format (YYYYJJ00)
+- Data verified against official CBS reference documentation

@@ -38,8 +38,7 @@ Filter the data for these three specific energy sources:
 
 
 * **Verification:**
-* The script must print a comparison table to the console for the year **2023**, comparing the fetched values against the "Spec Input" provided in the file /Users/koen/RenGen/CBS_Ref.pdf
-
+* The script must print a comparison table to the console for the year **2023**, comparing the fetched values against the "Spec Input" provided in the file /Users/koen/RenGen2/CBS_Ref.pdf
 
 
 
