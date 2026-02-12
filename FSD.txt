@@ -1,0 +1,45 @@
+
+
+**Role & Objective**
+You are an expert Python Data Engineer. Write a Python script to retrieve historical renewable energy data from the **CBS (Statistics Netherlands) Open Data Portal** using the official API (`cbsodata`).
+
+**Target Data**
+Retrieve **yearly** historical data (from 1990 to the most recent available year) for the following metrics:
+
+1. **Installed Capacity:** Specifically `Electrical capacity end of year` (Unit: MW).
+2. **Electricity Production:** Specifically `Net production of electricity` under the category "Production without normalisation" (Unit: mln kWh).
+
+**Sources**
+Filter the data for these three specific energy sources:
+
+1. **Solar Power** (Solar photovoltaic).
+2. **Onshore Wind** (Wind energy: onshore).
+3. **Offshore Wind** (Wind energy: offshore).
+
+**Technical Specifications**
+
+* **Library:** Use `cbsodata` (the official Python wrapper for CBS OData API) and `pandas`.
+* **Dataset:** Use the dataset `82610ENG` ("Renewable electricity; production and capacity").
+* **Data Selection Logic:**
+* Download the metadata to identify the correct codes.
+* **Crucial:** For production, ensure you select the variable corresponding strictly to **"Net production of electricity"** (often found under the "Production without normalisation" hierarchy). Do *not* use normalized figures.
+
+
+* **Data Transformation:**
+* Filter for the relevant `EnergySourcesTechniques` and `Topics`.
+* Clean the `Periods` column (convert strictly to integer Years).
+* Pivot the data so that `Years` are the index and the columns are `Installed Capacity (MW)` and `Net Production (mln kWh)`.
+
+
+* **Output:**
+* Generate a single Excel file named `CBS_Renewable_Data.xlsx`.
+* Create **three separate sheets**, named exactly: "Solar", "Onshore Wind", "Offshore Wind".
+* Each sheet must contain the corresponding dataframe for that source.
+
+
+* **Verification:**
+* The script must print a comparison table to the console for the year **2023**, comparing the fetched values against the "Spec Input" provided in the file /Users/koen/RenGen/CBS_Ref.pdf
+
+
+
+
