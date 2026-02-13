@@ -1,65 +1,79 @@
-# CBS Renewable Energy Data Fetcher
+# CBS Renewable Electricity Data Fetcher
 
-## Overview
+Retrieve historical renewable energy data from the **CBS (Statistics Netherlands) Open Data Portal** and export it to Excel.
 
-This project provides a robust Python-based solution for retrieving historical renewable energy data from the **CBS (Statistics Netherlands) Open Data Portal**. It specifically focuses on yearly historical data from 1990 onwards for Solar Power, Onshore Wind, and Offshore Wind.
+## Target Data
 
-## Objectives
+Dataset **[82610ENG](https://opendata.cbs.nl/statline/#/CBS/en/dataset/82610ENG)** — *Renewable electricity; production and capacity*
 
-- Retrieve **Installed Capacity** (Electrical capacity end of year, Unit: MW).
-- Retrieve **Electricity Production** (Net production of electricity, Unit: mln kWh).
-- Filter data for three energy sources:
-  1. Solar photovoltaic
-  2. Wind energy: onshore
-  3. Wind energy: offshore
-- Transform and pivot data for easy analysis.
-- Export results to a multi-sheet Excel file.
+**Metrics** (yearly, from 1990 to latest available):
 
-## Technical Specifications
+| Metric | Unit | CBS Column |
+|---|---|---|
+| Electrical capacity end of year | MW | `ElectricalCapacityEndOfYear_8` |
+| Net production of electricity | mln kWh | `NetProductionOfElectricity_3` |
 
-- **Library:** `pandas`, `requests`, `openpyxl`.
+> Production figures use **"Production without normalisation"** — not the normalised variant.
 
-- **Dataset:** CBS dataset `82610ENG` ("Renewable electricity; production and capacity").
-- **API Interaction:** Implements robust manual HTTP requests with retry logic and pagination to handle connection resets.
-- **Data Selection:** Uses `NetProductionOfElectricity_3` and `ElectricalCapacityEndOfYear_8` to ensure alignment with official reference figures.
+**Energy sources:**
 
-## Implementation Details
+| CBS Source | Excel Sheet |
+|---|---|
+| Solar photovoltaic | Solar |
+| Wind energy: onshore | Onshore Wind |
+| Wind energy: offshore | Offshore Wind |
 
-The core script is [fetch_cbs_data.py](fetch_cbs_data.py). It performs the following steps:
+## Output
 
-1. **Fetch**: Connects to the CBS OData API and retrieves the complete dataset records.
-2. **Clean**: Parses the `Periods` column to extract integer years (e.g., '1990JJ00' -> 1990).
-3. **Filter**: Selects the specific energy source keys:
-    - Solar: `E006590`
-    - Onshore Wind: `E006637`
-    - Offshore Wind: `E006638`
-4. **Transform**: Pivots the data so `Years` are the index and the columns are `Installed Capacity (MW)` and `Net Production (mln kWh)`.
-5. **Export**: Saves a single Excel file named `CBS_Renewable_Data.xlsx` with three sheets: "Solar", "Onshore Wind", and "Offshore Wind".
+`CBS_Renewable_Data.xlsx` — three sheets ("Solar", "Onshore Wind", "Offshore Wind"), each with `Year` as index and two columns: `Net Production (mln kWh)` and `Installed Capacity (MW)`.
+
+## Requirements
+
+```
+pip install pandas requests openpyxl urllib3
+```
+
+## Usage
+
+```bash
+python fetch_cbs_renewable.py
+```
+
+## Design Notes
+
+- **Direct HTTP with retry** — The `cbsodata` library lacks retry logic and the CBS API frequently drops connections. This script uses `requests` + `urllib3.Retry` with exponential backoff (5 attempts, 2 s base).
+- **Data-driven key discovery** — Instead of querying the slow `EnergySourcesTechniques` metadata endpoint, source keys are identified by matching 2023 reference values against fetched data (`E006637` = Onshore Wind, `E006638` = Offshore Wind, `E006590` = Solar PV).
+- **`$select` filtering** — Only the 4 needed columns are requested from the OData API, reducing payload size.
 
 ## Verification
 
-The implementation has been verified against reference data from `CBS_Ref.pdf` for the years 2022, 2023, and 2024.
+The script prints a comparison table against reference values from `CBS_Ref.pdf` (2022–2024):
 
-### Final Verification Results
-
-All fetched values matched the reference figures perfectly:
-
-| Source | Year | Metric | Fetched | Reference | Diff |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| Solar | 2022 | Net Production | 16657.0 | 16657 | 0.0 |
-| Solar | 2023 | Net Production | 19607.0 | 19607 | 0.0 |
-| Solar | 2024 | Net Production | 21822.0 | 21822 | 0.0 |
-| Onshore Wind | 2023 | Net Production | 17482.0 | 17482 | 0.0 |
-| Offshore Wind | 2023 | Net Production | 11553.0 | 11553 | 0.0 |
-
-## Acknowledgement
-
-This project was fully implemented by Gemini 3 Flash without user intervention, other than providing the requirements and requested a full comparison against all data in `CBS_Ref.pdf`.
-
-To run the extraction and verification:
-
-```bash
-python3 fetch_cbs_data.py
+```
+Source          Year  Metric                          Fetched  Reference  Status
+Onshore Wind    2022  Net Production (mln kWh)         13,134     13,134  ✓ PASS
+Onshore Wind    2022  Installed Capacity (MW)           6,131      6,131  ✓ PASS
+Onshore Wind    2023  Net Production (mln kWh)         17,482     17,482  ✓ PASS
+Onshore Wind    2023  Installed Capacity (MW)           6,692      6,692  ✓ PASS
+Onshore Wind    2024  Net Production (mln kWh)         17,657     17,657  ✓ PASS
+Onshore Wind    2024  Installed Capacity (MW)           6,955      6,955  ✓ PASS
+Offshore Wind   2022  Net Production (mln kWh)          7,936      7,936  ✓ PASS
+Offshore Wind   2022  Installed Capacity (MW)           2,570      2,570  ✓ PASS
+Offshore Wind   2023  Net Production (mln kWh)         11,553     11,553  ✓ PASS
+Offshore Wind   2023  Installed Capacity (MW)           4,110      4,110  ✓ PASS
+Offshore Wind   2024  Net Production (mln kWh)         15,182     15,182  ✓ PASS
+Offshore Wind   2024  Installed Capacity (MW)           4,748      4,748  ✓ PASS
+Solar           2022  Net Production (mln kWh)         16,657     16,657  ✓ PASS
+Solar           2022  Installed Capacity (MW)          17,356     17,356  ✓ PASS
+Solar           2023  Net Production (mln kWh)         19,607     19,607  ✓ PASS
+Solar           2023  Installed Capacity (MW)          21,957     21,957  ✓ PASS
+Solar           2024  Net Production (mln kWh)         21,822     21,822  ✓ PASS
+Solar           2024  Installed Capacity (MW)          24,772     24,772  ✓ PASS
+Overall: ALL PASS ✓
 ```
 
-Upon completion, the script will print a comparison table to the console and generate the `CBS_Renewable_Data.xlsx` file in the same directory.
+All **18 values** (3 sources × 3 years × 2 metrics) match. Each sheet contains **35 years** of data (1990–2024).
+
+---
+
+> This repository was fully created by **Claude Opus 4.6 (Thinking)** without user intervention, other than requesting a full comparison against all data in `CBS_Ref.pdf`.
